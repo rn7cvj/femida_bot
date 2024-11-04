@@ -17,7 +17,7 @@ COPY . .
 EXPOSE 8443
 
 # Define environment variable
-ENV TELEGRAM_TOKEN=your-telegram-bot-token
+ENV TELEGRAM_TOKEN=7702111669:AAGFJiAoHgnogEyTAwyUktBxR_Te1wIK88M
 
 # Run the bot
-CMD ["python", "./main.py"]
+CMD ["python", "./run.py"]

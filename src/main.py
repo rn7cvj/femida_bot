@@ -1,6 +1,8 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler , CallbackQueryHandler
-from src.localization import TEXTS, CATEGORIES  # Импортируем тексты и категории
+from src.localization import TEXTS, CATEGORIES , DOCS # Импортируем тексты и категории
+from src.sender import send_email
+
 import os
 from dotenv import load_dotenv
 
@@ -104,6 +106,30 @@ async def subcategory(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
     subcategory = CATEGORIES[category][subcategory_index]
 
+    if category == "Документация":
+
+        file_path = DOCS[subcategory]
+
+        await query.message.delete()
+
+        await context.bot.send_document(
+            chat_id=update.effective_chat.id,
+            document=open(file_path, 'rb'),
+            caption=TEXTS["document_caption"].replace("%% SUBCATEGORY_NAME %%", subcategory),
+            filename=TEXTS["document_caption"].replace("%% SUBCATEGORY_NAME %%", subcategory)
+        )
+        
+        category_buttons = [
+            [InlineKeyboardButton(category, callback_data=category)] for category in CATEGORIES.keys()
+        ]
+
+        await query.message.reply_text(
+            text=TEXTS["choose_category"],
+            reply_markup=InlineKeyboardMarkup(category_buttons)
+        )
+
+        return CATEGORY
+
 
     await query.edit_message_text(TEXTS["request_instructions"].replace("%% CATEGORY_NAME %%", category).replace("%% SUBCATEGORY_NAME %%", subcategory))
     return REQUEST
@@ -111,10 +137,34 @@ async def subcategory(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 # Функция обработки файла запроса
 async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     file = update.message.document
+
     if file:
-        file =  await file.get_file() 
-    
-        await update.message.reply_text(TEXTS["file_received"])
+        try:
+            file = await file.get_file()
+
+            file_path = f"./downloads/{file.file_id}.{file.file_path.split('.')[-1]}"
+        
+
+            await file.download_to_drive(
+                custom_path=file_path
+            )
+        
+
+            send_email(
+                subject="Запрос на юридическую консультацию",
+                body="Пожалуйста, ознакомьтесь с прикрепленным файлом.",
+                attachment_path=file_path
+            )
+
+            await update.message.reply_text(TEXTS["file_received"])
+
+            os.remove(file_path)
+
+        except Exception as e:
+           
+            await update.message.reply_text(TEXTS["file_received_fail"])
+        
+        
         return ConversationHandler.END
     else:
         await update.message.reply_text(TEXTS["file_error"])
@@ -122,6 +172,8 @@ async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 # Основная функция
 def main():
+
+
     application = Application.builder().token(TOKEN).build()
 
     # Conversation handler для работы с шагами
