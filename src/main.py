@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-AGREEMENT, CATEGORY, SUBCATEGORY, REQUEST = range(4)
+AGREEMENT, CATEGORY, SUBCATEGORY, REQUEST, START_OVER = range(5)
 
 category_buttons = [
             [InlineKeyboardButton(category, callback_data=category)] for category in CATEGORIES.keys()
@@ -137,9 +137,15 @@ async def subcategory(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 # Функция обработки файла запроса
 async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     file = update.message.document
+    query = update.callback_query
 
     if file:
         try:
+
+            message = await update.message.reply_text(
+                TEXTS["file_in_process"],
+            )
+
             file = await file.get_file()
 
             file_path = f"./downloads/{file.file_id}.{file.file_path.split('.')[-1]}"
@@ -156,19 +162,37 @@ async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
                 attachment_path=file_path
             )
 
-            await update.message.reply_text(TEXTS["file_received"])
+            start_over_button = [
+                [InlineKeyboardButton(TEXTS["start_over"], callback_data="start_over")]
+            ]
+
+            # await update.message.delete()
+
+
+            # await update.callback_query.edit_message_text(
+            #     TEXTS["file_received"],
+            #     reply_markup=InlineKeyboardMarkup(start_over_button)
+            # )
+
+            await message.edit_text(TEXTS["file_received"], reply_markup=InlineKeyboardMarkup(start_over_button),)
 
             os.remove(file_path)
-
         except Exception as e:
-           
+            print(e)
             await update.message.reply_text(TEXTS["file_received_fail"])
         
         
-        return ConversationHandler.END
+        return START_OVER
     else:
         await update.message.reply_text(TEXTS["file_error"])
         return REQUEST
+
+async def start_over(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.callback_query.answer()
+    await update.callback_query.edit_message_text(
+        TEXTS["choose_category"],  
+        reply_markup=InlineKeyboardMarkup(category_buttons),)
+    return CATEGORY
 
 # Основная функция
 def main():
@@ -184,6 +208,7 @@ def main():
             CATEGORY: [CallbackQueryHandler(category)],
             SUBCATEGORY: [CallbackQueryHandler(subcategory)],
             REQUEST: [MessageHandler(filters.Document.ALL & ~filters.COMMAND, request_file)],
+            START_OVER : [CallbackQueryHandler(start_over)],
         },
         fallbacks=[CommandHandler('start', start)],
     )
