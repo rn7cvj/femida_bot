@@ -1,4 +1,5 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -39,7 +40,7 @@ agreement_buttons = [
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await update.message.reply_text(
-        TEXTS["start_message"], reply_markup=InlineKeyboardMarkup(agreement_buttons)
+        TEXTS["start_message"], reply_markup=InlineKeyboardMarkup(agreement_buttons), parse_mode=ParseMode.MARKDOWN
     )
 
     return AGREEMENT
@@ -53,13 +54,13 @@ async def agreement(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_reply = query.data
 
     if user_reply == "agree":
-        # Отправляем отдельное сообщение с согласием
-        await query.edit_message_text(TEXTS["agree_message"])
+        await query.edit_message_text(TEXTS["agree_message"], parse_mode=ParseMode.MARKDOWN)
 
-        # Отправляем сообщение с выбором категории
+     
         await query.message.reply_text(
             TEXTS["choose_category"],
             reply_markup=InlineKeyboardMarkup(category_buttons),
+            parse_mode=ParseMode.MARKDOWN,
         )
         return CATEGORY
 
@@ -106,6 +107,7 @@ async def category(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await query.edit_message_text(
             TEXTS["choose_subcategory"].replace("%% CATEGORY_NAME %%", category),
             reply_markup=InlineKeyboardMarkup(subcategory_buttons),
+            parse_mode=ParseMode.MARKDOWN,
         )
         return SUBCATEGORY
 
@@ -152,6 +154,7 @@ async def subcategory(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             filename=TEXTS["document_caption"].replace(
                 "%% SUBCATEGORY_NAME %%", subcategory
             ),
+            parse_mode=ParseMode.MARKDOWN,
         )
 
         category_buttons = [
@@ -162,6 +165,7 @@ async def subcategory(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         await query.message.reply_text(
             text=TEXTS["choose_category"],
             reply_markup=InlineKeyboardMarkup(category_buttons),
+            parse_mode=ParseMode.MARKDOWN,
         )
 
         return CATEGORY
@@ -175,6 +179,7 @@ async def subcategory(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         .replace("%% CATEGORY_NAME %%", category)
         .replace("%% SUBCATEGORY_NAME %%", subcategory),
         reply_markup=InlineKeyboardMarkup(back_button),
+        parse_mode=ParseMode.MARKDOWN,
     )
     return REQUEST
 
@@ -204,6 +209,7 @@ async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
             message = await update.message.reply_text(
                 TEXTS["file_in_process"],
+                parse_mode=ParseMode.MARKDOWN,
             )
 
             file = await file.get_file()
@@ -232,16 +238,17 @@ async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             await message.edit_text(
                 TEXTS["file_received"],
                 reply_markup=InlineKeyboardMarkup(start_over_button),
+                parse_mode=ParseMode.MARKDOWN,
             )
 
             os.remove(file_path)
         except Exception as e:
             print(e)
-            await update.message.reply_text(TEXTS["file_received_fail"])
+            await update.message.reply_text(TEXTS["file_received_fail"], parse_mode=ParseMode.MARKDOWN)
 
         return START_OVER
     else:
-        await update.message.reply_text(TEXTS["file_error"])
+        await update.message.reply_text(TEXTS["file_error"], parse_mode=ParseMode.MARKDOWN)
         return REQUEST
 
 
@@ -271,6 +278,7 @@ async def request_feedback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
             message = await update.message.reply_text(
                 TEXTS["question_in_process"],
+                parse_mode=ParseMode.MARKDOWN,
             )
 
 
@@ -287,11 +295,12 @@ async def request_feedback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await message.edit_text(
                 TEXTS["question_received"],
                 reply_markup=InlineKeyboardMarkup(start_over_button),
+                parse_mode=ParseMode.MARKDOWN,
             )
 
     except Exception as e:
         print(e)
-        await update.message.reply_text(TEXTS["question_received_fail"])
+        await update.message.reply_text(TEXTS["question_received_fail"], parse_mode=ParseMode.MARKDOWN)
 
     return START_OVER
    
@@ -301,6 +310,7 @@ async def start_over(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.callback_query.edit_message_text(
         TEXTS["choose_category"],
         reply_markup=InlineKeyboardMarkup(category_buttons),
+        parse_mode=ParseMode.MARKDOWN,
     )
     return CATEGORY
 

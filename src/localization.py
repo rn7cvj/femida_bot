@@ -19,7 +19,7 @@ TEXTS = {
     ),
     "agree_message": "Ваше согласие принято.",
     "disagree_message": "Ваша работа завершена. Чтобы начать снова, нажмите - /start",
-    "choose_category" : "Выберите категорию к которой относится ваш запрос.",
+    "choose_category" : "Выберите категорию к которой относится ваш запрос\nИли свяжитесь с нами по почте **femidalaw.vvsu@mail.ru**.",
     "choose_subcategory": "Вы выбрали категорию %% CATEGORY_NAME %%. Теперь выберите подкатегорию.",
     "error_category": "Ошибка выбора. Попробуйте снова.",
     "request_instructions": (
