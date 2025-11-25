@@ -153,7 +153,7 @@ async def subcategory(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             ),
             filename=TEXTS["document_caption"].replace(
                 "%% SUBCATEGORY_NAME %%", subcategory
-            ),
+            ) + f".{file_path.split('.')[-1]}",
             parse_mode=ParseMode.MARKDOWN,
         )
 
