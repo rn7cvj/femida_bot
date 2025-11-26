@@ -206,6 +206,7 @@ async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     file = update.message.document
     if file:
         try:
+            original_filename = file.file_name
 
             message = await update.message.reply_text(
                 TEXTS["file_in_process"],
@@ -213,6 +214,7 @@ async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             )
 
             file = await file.get_file()
+
 
             file_path = f"./downloads/{file.file_id}.{file.file_path.split('.')[-1]}"
 
@@ -222,6 +224,7 @@ async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
                 subject="Запрос на юридическую консультацию",
                 body="Пожалуйста, ознакомьтесь с прикрепленным файлом.",
                 attachment_path=file_path,
+                attachment_filename=original_filename,
             )
 
             start_over_button = [

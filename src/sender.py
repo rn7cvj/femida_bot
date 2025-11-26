@@ -5,7 +5,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import os
 
-def send_email(subject, body, attachment_path=None):
+def send_email(subject, body, attachment_path=None, attachment_filename=None):
     to_email = os.getenv('RECIPIENT_EMAIL')
     from_email = os.getenv('BOT_EMAIL_ADDRESS')
     password = os.getenv('BOT_EMAIL_PASSWORD')
@@ -22,7 +22,9 @@ def send_email(subject, body, attachment_path=None):
         part = MIMEBase('application', 'octet-stream')
         part.set_payload(attachment.read())
         encoders.encode_base64(part)
-        part.add_header('Content-Disposition', f'attachment; filename={os.path.basename(attachment_path)}')
+        
+        filename = attachment_filename if attachment_filename else os.path.basename(attachment_path)
+        part.add_header('Content-Disposition', f'attachment; filename={filename}')
         msg.attach(part)
 
     try:
