@@ -3,6 +3,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+from email.header import Header
 import os
 
 def send_email(subject, body, attachment_path=None, attachment_filename=None):
@@ -13,9 +14,9 @@ def send_email(subject, body, attachment_path=None, attachment_filename=None):
     msg = MIMEMultipart()
     msg['From'] = from_email
     msg['To'] = to_email
-    msg['Subject'] = subject
+    msg['Subject'] = Header(subject, 'utf-8')
 
-    msg.attach(MIMEText(body, 'plain'))
+    msg.attach(MIMEText(body, 'plain', 'utf-8'))
 
     if attachment_path is not None:
         attachment = open(attachment_path, 'rb')
@@ -24,7 +25,9 @@ def send_email(subject, body, attachment_path=None, attachment_filename=None):
         encoders.encode_base64(part)
         
         filename = attachment_filename if attachment_filename else os.path.basename(attachment_path)
-        part.add_header('Content-Disposition', f'attachment; filename={filename}')
+        # Используем RFC 2231 для кодирования имён файлов с Кириллицей
+        encoded_filename = Header(filename, 'utf-8').encode()
+        part.add_header('Content-Disposition', 'attachment', filename=filename)
         msg.attach(part)
 
     try:

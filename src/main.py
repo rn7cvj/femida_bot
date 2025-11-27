@@ -174,6 +174,10 @@ async def subcategory(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         [InlineKeyboardButton(TEXTS["back"], callback_data="back_to_category")]
     ]
 
+    # Сохраняем выбранную категорию и подкатегорию в контексте для последующей отправки
+    context.user_data['selected_category'] = category
+    context.user_data['selected_subcategory'] = subcategory
+    
     await query.edit_message_text(
         TEXTS["request_instructions"]
         .replace("%% CATEGORY_NAME %%", category)
@@ -220,9 +224,19 @@ async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
             await file.download_to_drive(custom_path=file_path)
 
+            # Получаем сохраненную категорию и подкатегорию из контекста
+            category = context.user_data.get('selected_category', 'Не указано')
+            subcategory = context.user_data.get('selected_subcategory', 'Не указано')
+            
+            email_body = (
+                f"Категория: {category}\n"
+                f"Пункт: {subcategory}\n\n"
+                f"Пожалуйста, ознакомьтесь с прикрепленным файлом."
+            )
+
             send_email(
                 subject="Запрос на юридическую консультацию",
-                body="Пожалуйста, ознакомьтесь с прикрепленным файлом.",
+                body=email_body,
                 attachment_path=file_path,
                 attachment_filename=original_filename,
             )
