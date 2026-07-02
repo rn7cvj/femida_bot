@@ -12,8 +12,15 @@ from telegram.ext import (
 from src.localization import TEXTS, CATEGORIES, DOCS  # Импортируем тексты и категории
 from src.sender import send_email
 
+import logging
 import os
 from dotenv import load_dotenv
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -132,12 +139,27 @@ async def subcategory(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         )
         return CATEGORY
 
-    subcategory_index = int(data.split(":")[1])
-    category_index = int(data.split(":")[0])
+    # Защита от устаревших/некорректных кнопок: ожидаем формат "<category_index>:<subcategory_index>"
+    parts = data.split(":")
+    if len(parts) != 2 or not all(p.isdigit() for p in parts):
+        await query.edit_message_text(
+            TEXTS["choose_category"],
+            reply_markup=InlineKeyboardMarkup(category_buttons),
+        )
+        return CATEGORY
 
-    category = list(CATEGORIES.keys())[category_index]
+    category_index = int(parts[0])
+    subcategory_index = int(parts[1])
 
-    subcategory = CATEGORIES[category][subcategory_index]
+    try:
+        category = list(CATEGORIES.keys())[category_index]
+        subcategory = CATEGORIES[category][subcategory_index]
+    except IndexError:
+        await query.edit_message_text(
+            TEXTS["choose_category"],
+            reply_markup=InlineKeyboardMarkup(category_buttons),
+        )
+        return CATEGORY
 
     if category == "Документация":
 
@@ -322,6 +344,11 @@ async def request_feedback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     return START_OVER
    
 
+# Глобальный обработчик ошибок — чтобы сетевые и прочие сбои не валились без перехвата
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.error("Ошибка при обработке обновления:", exc_info=context.error)
+
+
 async def start_over(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.callback_query.answer()
     await update.callback_query.edit_message_text(
@@ -335,7 +362,15 @@ async def start_over(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 # Основная функция
 def main():
 
-    application = Application.builder().token(TOKEN).build()
+    application = (
+        Application.builder()
+        .token(TOKEN)
+        .connect_timeout(30)
+        .read_timeout(30)
+        .write_timeout(60)
+        .pool_timeout(30)
+        .build()
+    )
 
     # Conversation handler для работы с шагами
     conv_handler = ConversationHandler(
@@ -355,6 +390,7 @@ def main():
     )
 
     application.add_handler(conv_handler)
+    application.add_error_handler(error_handler)
 
     # Запуск бота
     application.run_polling()
