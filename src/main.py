@@ -167,17 +167,18 @@ async def subcategory(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
         await query.message.delete()
 
-        await context.bot.send_document(
-            chat_id=update.effective_chat.id,
-            document=open(file_path, "rb"),
-            caption=TEXTS["document_caption"].replace(
-                "%% SUBCATEGORY_NAME %%", subcategory
-            ),
-            filename=TEXTS["document_caption"].replace(
-                "%% SUBCATEGORY_NAME %%", subcategory
-            ) + f".{file_path.split('.')[-1]}",
-            parse_mode=ParseMode.MARKDOWN,
-        )
+        with open(file_path, "rb") as document:
+            await context.bot.send_document(
+                chat_id=update.effective_chat.id,
+                document=document,
+                caption=TEXTS["document_caption"].replace(
+                    "%% SUBCATEGORY_NAME %%", subcategory
+                ),
+                filename=TEXTS["document_caption"].replace(
+                    "%% SUBCATEGORY_NAME %%", subcategory
+                ) + f".{file_path.split('.')[-1]}",
+                parse_mode=ParseMode.MARKDOWN,
+            )
 
         category_buttons = [
             [InlineKeyboardButton(category, callback_data=category)]
@@ -231,6 +232,7 @@ async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
     file = update.message.document
     if file:
+        file_path = None
         try:
             original_filename = file.file_name
 
@@ -280,10 +282,13 @@ async def request_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
                 parse_mode=ParseMode.MARKDOWN,
             )
 
-            os.remove(file_path)
         except Exception as e:
-            print(e)
+            logger.error("Ошибка при обработке файла запроса:", exc_info=e)
             await update.message.reply_text(TEXTS["file_received_fail"], parse_mode=ParseMode.MARKDOWN)
+        finally:
+            # Удаляем скачанный файл в любом случае, чтобы не копить мусор на диске
+            if file_path and os.path.exists(file_path):
+                os.remove(file_path)
 
         return START_OVER
     else:
